@@ -4,8 +4,8 @@ services:
     container_name: prometheus
     image: prom/prometheus:v2.30.0
     volumes:
-      - ./config:/etc/prometheus
-      - ./data:/prometheus
+      - ./prometheus/config:/etc/prometheus
+      - ./prometheus/data:/prometheus
     environment:
       - TZ="Asia/Taipei"
     ports:
@@ -36,7 +36,7 @@ services:
     image: prom/alertmanager:v0.23.0
     restart: unless-stopped
     volumes:
-      - ./alertmanager:/etc/alertmanager
+      - ./prometheus/alertmanager:/etc/alertmanager
     environment:
       - TZ="Asia/Taipei"
     command:
@@ -77,7 +77,7 @@ services:
   productpage:
     container_name: bookinfo-productpage
     build:
-      context: ../Chatop4Msa-Sample-Bookinfo/src/productpage
+      context: src/productpage
       args:
         - flood_factor=100
     ports:
@@ -86,7 +86,7 @@ services:
   details:
     container_name: bookinfo-details
     build:
-      context: ../Chatop4Msa-Sample-Bookinfo/src/details
+      context: src/details
       args:
         - service_version=v2
         - enable_external_book_service=true
@@ -96,7 +96,7 @@ services:
   ratings:
     container_name: bookinfo-ratings
     build:
-      context: ../Chatop4Msa-Sample-Bookinfo/src/ratings
+      context: src/ratings
       args:
         - service_version=v2
     ports:
@@ -105,7 +105,7 @@ services:
   reviews:
     container_name: bookinfo-reviews
     build:
-      context: ../Chatop4Msa-Sample-Bookinfo/src/reviews
+      context: src/reviews
       args:
         - service_version=v3
         - enable_ratings=true
