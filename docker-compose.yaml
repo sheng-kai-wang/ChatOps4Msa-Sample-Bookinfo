@@ -1,70 +1,114 @@
-version: '3'
-
+version: "3.8"
 services:
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.30.0
+    volumes:
+      - ./config:/etc/prometheus
+      - ./data:/prometheus
+    environment:
+      - TZ="Asia/Taipei"
+    ports:
+      - 9090:9090
+
+  node-exporter:
+    container_name: prometheus-node-exporter
+    image: prom/node-exporter:v1.2.2
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    environment:
+      - TZ="Asia/Taipei"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--no-collector.arp'
+      - '--no-collector.netstat'
+      - '--no-collector.netdev'
+      - '--no-collector.softnet'
+
+  alertmanager:
+    container_name: prometheus-alertmanager
+    image: prom/alertmanager:v0.23.0
+    restart: unless-stopped
+    volumes:
+      - ./alertmanager:/etc/alertmanager
+    environment:
+      - TZ="Asia/Taipei"
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+  
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:8.1.5
+    restart: unless-stopped
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - 3000:3000
+
+  cadvisor:
+    container_name: google-cadvisor
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - 8080:8080
+    privileged: true
+    devices:
+      - /dev/kmsg
+
+# ==========================================================
+
   productpage:
+    container_name: bookinfo-productpage
     build:
-      context: src/productpage
+      context: ../Chatop4Msa-Sample-Bookinfo/src/productpage
       args:
         - flood_factor=100
     ports:
       - '9080:9080'
-    links:
-      - mongodb
-      - mysql
-    environment:
-      - MONGO_DB_URL=mongodb://mongodb:27017
-      - MYSQL_DB_URL=jdbc:mysql://mysql:3306/bookinfo
-      - MYSQL_DB_USER=mysql
-      - MYSQL_DB_PASSWORD=root
 
   details:
+    container_name: bookinfo-details
     build:
-      context: src/details
+      context: ../Chatop4Msa-Sample-Bookinfo/src/details
       args:
         - service_version=v2
         - enable_external_book_service=true
     ports:
       - '9081:9080'
-    links:
-      - mongodb
-    environment:
-      - MONGO_DB_URL=mongodb://mongodb:27017
 
   ratings:
+    container_name: bookinfo-ratings
     build:
-      context: src/ratings
+      context: ../Chatop4Msa-Sample-Bookinfo/src/ratings
       args:
         - service_version=v2
     ports:
       - '9082:9080'
-    links:
-      - mongodb
-    environment:
-      - MONGO_DB_URL=mongodb://mongodb:27017
 
   reviews:
+    container_name: bookinfo-reviews
     build:
-      context: src/reviews
+      context: ../Chatop4Msa-Sample-Bookinfo/src/reviews
       args:
         - service_version=v3
         - enable_ratings=true
         - star_color=red
     ports:
       - '9083:9080'
-
-  mongodb:
-    build:
-      context: src/mongodb
-    ports:
-      - '27017:27017'
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=mongodb
-      - MONGO_INITDB_ROOT_PASSWORD=root
-
-  mysql:
-    build:
-      context: src/mysql
-    ports:
-      - '3306:3306'
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
