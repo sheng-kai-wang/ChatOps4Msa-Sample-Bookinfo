@@ -52,7 +52,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=soselab
       - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - 3000:3000
@@ -71,6 +71,19 @@ services:
     privileged: true
     devices:
       - /dev/kmsg
+
+  rabbitmq:
+    image: rabbitmq:3.8-management
+    container_name: "rabbitmq"
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=soselab
+    volumes:
+      - ./rabbitmq/data:/var/lib/rabbitmq
 
 # ==========================================================
 
